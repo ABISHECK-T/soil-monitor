@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🌱 Soil Moisture Monitor</title>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-brand">
+    <span class="leaf">🌿</span>
+    <span class="brand-name">SoilSense</span>
+    <span class="brand-tag">Plant Moisture Monitor</span>
+  </div>
+  <div class="nav-status">
+    <span class="live-dot"></span>
+    <span id="liveLabel">Select a plant to begin</span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-content">
+    <h1>Soil Moisture <span>Dashboard</span></h1>
+    <p>Monitor real-time soil moisture from Kaggle sensor datasets. Feed new readings, track irrigation events, and keep your plants healthy.</p>
+  </div>
+  <div class="hero-selector">
+    <label>Choose Plant Dataset</label>
+    <div class="dataset-cards">
+      {% for key, info in datasets.items() %}
+      <button class="ds-btn" data-key="{{ key }}" onclick="selectDataset('{{ key }}', this)">
+        <span class="ds-icon">🪴</span>
+        <span class="ds-name">{{ info.label }}</span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+</header>
+
+<!-- MAIN DASHBOARD -->
+<main class="dashboard" id="dashboard" style="display:none">
+
+  <!-- STATS ROW -->
+  <section class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value" id="statRecords">—</div>
+      <div class="stat-label">Total Records</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📅</div>
+      <div class="stat-value" id="statRange">—</div>
+      <div class="stat-label">Date Range</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💧</div>
+      <div class="stat-value" id="statIrrigation">—</div>
+      <div class="stat-label">Irrigation Events</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🌡️</div>
+      <div class="stat-value" id="statAvg">—</div>
+      <div class="stat-label">Avg Moisture (S0)</div>
+    </div>
+  </section>
+
+  <!-- SENSOR GAUGES -->
+  <section class="section">
+    <h2 class="section-title">📡 Latest Sensor Readings</h2>
+    <div class="gauges-grid" id="gaugesGrid"></div>
+  </section>
+
+  <!-- CHART -->
+  <section class="section">
+    <h2 class="section-title">📈 Moisture Trend (Last 200 Readings)</h2>
+    <div class="chart-wrap">
+      <canvas id="moistureChart"></canvas>
+    </div>
+  </section>
+
+  <!-- FEED NEW DATA -->
+  <section class="section">
+    <h2 class="section-title">➕ Feed New Sensor Reading</h2>
+    <p class="section-sub">Enter sensor values (0.00 = bone dry → 1.00 = fully saturated)</p>
+    <div class="feed-form" id="feedForm">
+      <div class="feed-grid">
+        <div class="feed-field">
+          <label>Sensor 0 (Top Layer)</label>
+          <input type="number" id="f0" min="0" max="1" step="0.01" placeholder="e.g. 0.45"/>
+          <span class="field-hint" id="h0"></span>
+        </div>
+        <div class="feed-field">
+          <label>Sensor 1 (Upper Mid)</label>
+          <input type="number" id="f1" min="0" max="1" step="0.01" placeholder="e.g. 0.60"/>
+          <span class="field-hint" id="h1"></span>
+        </div>
+        <div class="feed-field">
+          <label>Sensor 2 (Mid Layer)</label>
+          <input type="number" id="f2" min="0" max="1" step="0.01" placeholder="e.g. 0.55"/>
+          <span class="field-hint" id="h2"></span>
+        </div>
+        <div class="feed-field">
+          <label>Sensor 3 (Lower Mid)</label>
+          <input type="number" id="f3" min="0" max="1" step="0.01" placeholder="e.g. 0.70"/>
+          <span class="field-hint" id="h3"></span>
+        </div>
+        <div class="feed-field">
+          <label>Sensor 4 (Drainage)</label>
+          <input type="number" id="f4" min="0" max="1" step="0.01" placeholder="e.g. 0.01"/>
+          <span class="field-hint" id="h4"></span>
+        </div>
+      </div>
+      <div class="feed-actions">
+        <button class="btn-submit" onclick="submitReading()">💾 Save Reading</button>
+        <button class="btn-irrigate" onclick="logIrrigation()">💧 Log Irrigation Event</button>
+        <button class="btn-clear" onclick="clearForm()">✕ Clear</button>
+      </div>
+      <div class="feed-result" id="feedResult" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- LEGEND -->
+  <section class="section">
+    <h2 class="section-title">🗺️ Moisture Scale Reference</h2>
+    <div class="legend-grid">
+      <div class="legend-item critical_low"><span class="dot"></span> 0–15% · Critical – Water Immediately</div>
+      <div class="legend-item low"><span class="dot"></span> 15–30% · Low – Needs Water Soon</div>
+      <div class="legend-item moderate"><span class="dot"></span> 30–50% · Moderate – Monitor Closely</div>
+      <div class="legend-item optimal"><span class="dot"></span> 50–80% · Optimal – Good Moisture</div>
+      <div class="legend-item high"><span class="dot"></span> 80–90% · High – Moist Enough</div>
+      <div class="legend-item saturated"><span class="dot"></span> 90–100% · Saturated – No Watering</div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>🌱 SoilSense · Kaggle Plant Vase Dataset · Built with Flask + Chart.js</p>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
